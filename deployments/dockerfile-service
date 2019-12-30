@@ -1,0 +1,19 @@
+FROM golang:alpine AS builder
+
+RUN mkdir /app
+ADD . /app
+WORKDIR /app
+
+RUN go build -o service ./cmd/speedfixationservice
+
+
+FROM alpine:latest
+RUN mkdir /db
+
+WORKDIR src
+
+COPY --from=builder /app .
+COPY --from=builder /app/internal/speedfixationservice/data ./data
+
+
+

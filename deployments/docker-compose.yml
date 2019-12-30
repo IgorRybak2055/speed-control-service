@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  speed_service:
+    build:
+      context: ..
+      dockerfile: ./deployments/dockerfile-service
+    restart: on-failure
+    env_file:
+      - ../configs/service.config
+    ports:
+      - 8001:8001
+    command: ./service
