@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/json-iterator/go"
 	"github.com/luno/jettison/errors"
 )
 
@@ -80,6 +81,8 @@ func (sf speedFixationRepo) CreateRecord(fixation SpeedFixation) error {
 		return err
 	}
 
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
 	jsf, err := json.Marshal(fixation)
 	if err != nil {
 		return err
@@ -118,6 +121,8 @@ func (sf speedFixationRepo) readFile(fileName string) ([]SpeedFixation, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 	if err := json.Unmarshal(file, &data); err != nil {
 		return nil, err
