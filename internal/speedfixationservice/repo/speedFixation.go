@@ -3,10 +3,10 @@ package repo
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/luno/jettison/errors"
@@ -15,16 +15,23 @@ import (
 // ContactRepo representations ContractRepository interface
 type speedFixationRepo struct {
 	storage string
+	mu      *sync.Mutex
 }
 
 // NewTestSpeedFixationRepository will create an object that represent the SpeedControlRepo interface for testing
 func NewTestSpeedFixationRepository(tempDir string) SpeedControlRepo {
-	return &speedFixationRepo{storage: tempDir}
+	return &speedFixationRepo{
+		storage: tempDir,
+		mu:      &sync.Mutex{},
+	}
 }
 
 // NewSpeedFixationRepository will create an object that represent the SpeedControlRepo interface
 func NewSpeedFixationRepository() SpeedControlRepo {
-	return &speedFixationRepo{storage: filepath.Join("internal", "speedfixationservice", "data")}
+	return &speedFixationRepo{
+		storage: filepath.Join("internal", "speedfixationservice", "data"),
+		mu:      &sync.Mutex{},
+	}
 }
 
 func (sf speedFixationRepo) createFile() error {
@@ -58,12 +65,15 @@ func (sf speedFixationRepo) openFile() (*os.File, error) {
 	return file, nil
 }
 
-func (sf speedFixationRepo) CreateRecord(fixation SpeedFixation) error {
+func (sf *speedFixationRepo) CreateRecord(fixation SpeedFixation) error {
 	var (
 		file   *os.File
 		err    error
 		offset int64 = 1
 	)
+
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
 
 	if file, err = sf.openFile(); err != nil {
 		return err
@@ -107,23 +117,6 @@ func (sf speedFixationRepo) CreateRecord(fixation SpeedFixation) error {
 	}
 
 	return nil
-}
-
-func (sf speedFixationRepo) readFile(fileName string) ([]SpeedFixation, error) {
-	var data dataSlice
-
-	path := filepath.Join(sf.storage, fileName+".json")
-
-	file, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(file, &data); err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }
 
 func (sf speedFixationRepo) selectViolators(fileName string, speedLimit float64) ([]SpeedFixation, error) {
