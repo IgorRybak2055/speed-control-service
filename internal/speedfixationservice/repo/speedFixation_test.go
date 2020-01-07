@@ -5,9 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,6 +29,22 @@ var testData = []SpeedFixation{
 		VehicleNumber: "8911 EE-3",
 		Speed:         65.7,
 	},
+}
+
+func readFile(t testing.TB, tempDir string, fileName string) []SpeedFixation {
+	var (
+		data     dataSlice
+		jsonIter = jsoniter.ConfigCompatibleWithStandardLibrary
+	)
+
+	path := filepath.Join(tempDir, fileName+".json")
+
+	file, err := ioutil.ReadFile(filepath.Clean(path))
+	require.NoError(t, err)
+
+	require.NoError(t, jsonIter.Unmarshal(file, &data))
+
+	return data
 }
 
 func BenchmarkLookUpOverSpeedByDate(b *testing.B) {
@@ -126,6 +144,7 @@ func Test_speedFixationRepo_CreateRecord(t *testing.T) {
 
 	sf := speedFixationRepo{
 		storage: tempDir,
+		mu:      &sync.Mutex{},
 	}
 
 	err := sf.CreateRecord(tt.args.fixation)
@@ -137,9 +156,7 @@ func Test_speedFixationRepo_CreateRecord(t *testing.T) {
 
 	require.NoError(t, err)
 
-	got, err := sf.readFile(time.Now().Format("02.01.2006"))
-	require.NoError(t, err)
-
+	got := readFile(t, tempDir, time.Now().Format("02.01.2006"))
 	require.Equal(t, tt.args.fixation, got[0])
 }
 
