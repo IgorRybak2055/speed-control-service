@@ -111,7 +111,6 @@ func makeResponse(w http.ResponseWriter, ans interface{}) {
 		_, err = w.Write(resp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
 
 		return
@@ -229,6 +228,7 @@ func (srv service) minMaxSpeed(w http.ResponseWriter, r *http.Request) {
 	resp, err := srv.uc.LookUpMinMaxSpeedByDate(date)
 	if err != nil {
 		responseError(w, err, http.StatusBadRequest)
+		return
 	}
 
 	makeResponse(w, resp)
